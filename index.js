@@ -13,9 +13,9 @@ app.use(express.json());
 app.get("/", (req, res) => res.send("Server is running on 1.9!"));
 
 connectDB().then((collections) => {
-  const publicRoutes = require("./routes/publicRoutes")(collections);
-  const adminRoutes = require("./routes/PublicData_Admin")(collections);
-  const publicData = require("./routes/adminRoutes")(collections);
+  const publicRoutes = require("./src/publicRoutes")(collections);
+  const adminRoutes = require("./src/PublicData_Admin")(collections);
+  const publicData = require("./src/adminRoutes")(collections);
 
   app.use(publicRoutes);
   app.use("/admin", publicData);
