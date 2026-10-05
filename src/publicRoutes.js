@@ -1,6 +1,11 @@
 // routes/publicRoutes.js
 const express = require("express");
 const router = express.Router();
+const redisClient = require('../db/redisClient')
+
+// Cash Clear Time in seconds
+let CleanCash = 86400 // cache will expire in 24 hour (86400 seconds)
+
 
 module.exports = (collections) => {
   const { Mail, Notice, Album, Link, Number, Visitor } = collections;
@@ -20,7 +25,7 @@ module.exports = (collections) => {
   });
 
   // get latest notice for client
-  router.get("/latest-notice", async (req, res) => {
+  router.get("/latest-mongo-notices", async (req, res) => {
     try {
       // Limited data
       const result = await Notice.find({}).sort({ _id: -1 }).limit(5).toArray();
@@ -33,14 +38,59 @@ module.exports = (collections) => {
     }
   });
 
+  // ========== get latest notice Faster ============
+  router.get("/latest-notice", async (req, res) => {
+    const cacheKey = 'latest-notice';
+    try {
+
+      // 1. Try to get data from Redis first
+      const cachedData = await redisClient.get(cacheKey);
+
+      if (cachedData) {
+        console.log('Serving from Redis Cache');
+        return res.status(200).send(JSON.parse(cachedData));
+      }
+
+      // 2. Cache Miss: Query the database
+      console.log('Querying MongoDB Database');
+      const result = await Notice.find({}).sort({ _id: -1 }).limit(5).toArray();
+
+      // 3. Save the result to Redis for next time
+      await redisClient.set(cacheKey, JSON.stringify(result), {
+        EX: CleanCash, // 'EX' 86400 means the cache will expire in 24 hour (86400 seconds)
+      });
+    
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.status(200).send(result);
+    } catch (error) {
+      console.error("Error retrieving data:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
+
   // get latest photo for client --
   router.get("/latest-album", async (req, res) => {
+    const cacheKey = 'latest-album';
     try {
-      // Limited data
-      const result = await Album.find({}).sort({ _id: -1 }).limit(5).toArray();
-      // const result = await cursor.toArray();
+      // 1. Try to get data from Redis first
+      const cachedData = await redisClient.get(cacheKey);
+
+      if (cachedData) {
+        console.log('Serving from Redis Cache');
+        return res.status(200).send(JSON.parse(cachedData));
+      }
+
+      // 2. Cache Miss: Query the database
+      console.log('Querying MongoDB Database');
+      const result = await Album.find({}).sort({ _id: -1 }).limit(5).toArray(); // Limited data
+
+      // 3. Save the result to Redis for next time
+      await redisClient.set(cacheKey, JSON.stringify(result), {
+        EX: CleanCash, // 'EX' 86400 means the cache will expire in 24 hour (86400 seconds)
+      });
+      
       res.setHeader("Access-Control-Allow-Origin", "*");
-      res.send(result);
+      res.status(200).send(result);
     } catch (error) {
       console.error("Error retrieving data:", error);
       res.status(500).send({ message: "Internal Server Error" });
@@ -49,9 +99,25 @@ module.exports = (collections) => {
 
   // get All Notice
   router.get("/all-notice", async (req, res) => {
+    const cacheKey = 'all-notice';
     try {
+      // 1. Try to get data from Redis first
+      const cachedData = await redisClient.get(cacheKey);
+
+      if (cachedData) {
+        console.log('Serving from Redis Cache');
+        return res.status(200).send(JSON.parse(cachedData));
+      }
+
+      // 2. Cache Miss: Query the database
       const cursor = Notice.find();
       const result = await cursor.toArray();
+      
+      // 3. Save the result to Redis for next time
+      await redisClient.set(cacheKey, JSON.stringify(result), {
+        EX: CleanCash, // 'EX' 86400 means the cache will expire in 24 hour (86400 seconds)
+      });
+
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.send(result);
     } catch (error) {
@@ -62,9 +128,25 @@ module.exports = (collections) => {
 
   // get all photo
   router.get("/all-photo", async (req, res) => {
+    const cacheKey = 'all-photo';
     try {
+      // 1. Try to get data from Redis first
+      const cachedData = await redisClient.get(cacheKey);
+
+      if (cachedData) {
+        console.log('Serving from Redis Cache');
+        return res.status(200).send(JSON.parse(cachedData));
+      }
+
+      // 2. Cache Miss: Query the database
       const albumPhoto = Album.find();
       const result = await albumPhoto.toArray();
+
+      // 3. Save the result to Redis for next time
+      await redisClient.set(cacheKey, JSON.stringify(result), {
+        EX: CleanCash, // 'EX' 86400 means the cache will expire in 24 hour (86400 seconds)
+      });
+
       res.send(result);
     } catch (error) {
       console.error("Error is coming for get album photo", error);
