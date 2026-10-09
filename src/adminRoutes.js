@@ -52,7 +52,7 @@ module.exports = (collections) => {
       if (!validPassword)
         return res.status(401).send("❌ Invalid credentials!");
 
-      const token = jwt.sign({ id: user._id, role: "admin" }, "secret_key", {
+      const token = jwt.sign({ id: user._id, role: "admin" }, process.env.JWT_SECRET || "secret_key", {
         expiresIn: "3h",
       });
       res.status(200).send({ token });
