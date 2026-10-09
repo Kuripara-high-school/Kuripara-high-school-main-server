@@ -46,6 +46,39 @@ module.exports = (collections) => {
     }
   });
 
+  // ---- letest data -------
+
+    // get All Notice
+  router.get("/get-all-notice", async (req, res) => {
+    try {
+
+      // Query the database get all notice data
+      const cursor = Notice.find();
+      const result = await cursor.toArray();
+      
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.send(result);
+    } catch (error) {
+      console.error("Error retrieving data:", error);
+      res.status(500).send({ message: "Internal Server Error" });
+    }
+  });
+
+  // get all photo
+  router.get("/all-event", async (req, res) => {
+    try {
+
+      // Query the database get all event
+      const albumPhoto = Album.find();
+      const result = await albumPhoto.toArray();
+
+      res.send(result);
+    } catch (error) {
+      console.error("Error is coming for get album photo", error);
+      res.status(500).send({ massage: "error is coming for get album data" });
+    }
+  });
+
   // --------------------- get large data ---------------
 
   return router;

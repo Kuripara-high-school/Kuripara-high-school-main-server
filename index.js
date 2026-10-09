@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => res.send("Server is running on 2.0!"));
+app.get("/", (req, res) => res.send("Server is running on 2.1!"));
 
 connectDB().then((collections) => {
   const publicRoutes = require("./src/publicRoutes")(collections);
